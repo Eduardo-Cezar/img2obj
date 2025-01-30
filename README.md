@@ -12,3 +12,6 @@ Modificar permissão
  Execução (Obs: pode demorar um pouco)
 
 	$ ./dependencias.sh
+
+# **Executar servidor web:**
+    $python app.py

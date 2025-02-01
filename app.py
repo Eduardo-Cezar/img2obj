@@ -14,10 +14,8 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://edu:123@localhost/banco_no
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 db = SQLAlchemy(app)
 
-# Garante que a pasta de uploads existe
+# garante que a pasta de uploads existe
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-
-
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -47,7 +45,7 @@ class Imagem(db.Model):
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
 
 with app.app_context():
-    # Cria todas as tabelas se não existirem
+    # cria todas as tabelas se não existirem
     db.create_all()
     print("Tabelas verificadas/criadas com sucesso!")
 
@@ -72,7 +70,7 @@ def register():
         senha = request.form['senha']
         confirmar_senha = request.form['confirmar_senha']
 
-        # Validações
+        # validações
         if len(username) < 3:
             flash('O nome de usuário deve ter pelo menos 3 caracteres')
             return redirect(url_for('register'))
@@ -85,14 +83,14 @@ def register():
             flash('As senhas não coincidem')
             return redirect(url_for('register'))
 
-        # Verifica se o usuário já existe
+        # verifica se user já  existe
         usuario_existe = Usuario.query.filter_by(username=username).first()
         if usuario_existe:
             flash('Este nome de usuário já está em uso')
             return redirect(url_for('register'))
 
         try:
-            # Cria novo usuário
+            # cria  usuário
             novo_usuario = Usuario(username=username, senha=senha)
             db.session.add(novo_usuario)
             db.session.commit()
@@ -124,7 +122,6 @@ def logout():
     session.pop('usuario_id', None)
     return redirect(url_for('login'))
 
-# Rota para o dashboard do usuário
 @app.route('/dashboard')
 def dashboard():
     if 'usuario_id' not in session:
@@ -134,7 +131,6 @@ def dashboard():
     imagens = Imagem.query.filter_by(usuario_id=session['usuario_id']).order_by(Imagem.data_upload.desc()).all()
     return render_template('dashboard.html', usuario=usuario, imagens=imagens)
 
-# Rota para upload de imagem
 @app.route('/upload', methods=['GET', 'POST'])
 def upload_imagem():
     if 'usuario_id' not in session:
@@ -152,15 +148,14 @@ def upload_imagem():
 
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
-            # Cria pasta específica para o usuário
+            
             user_folder = os.path.join(app.config['UPLOAD_FOLDER'], str(session['usuario_id']))
             os.makedirs(user_folder, exist_ok=True)
             
-            # Salva o arquivo
             filepath = os.path.join(user_folder, filename)
             file.save(filepath)
             
-            # Cria registro no banco
+            # cria um novo registro no bd
             nova_imagem = Imagem(
                 titulo=request.form.get('titulo', 'Sem título'),
                 descricao=request.form.get('descricao', ''),
@@ -176,7 +171,6 @@ def upload_imagem():
 
     return render_template('upload.html')
 
-# Rota para converter imagem em 3D
 @app.route('/converter/<int:imagem_id>', methods=['POST'])
 def converter_3d(imagem_id):
     if 'usuario_id' not in session:
@@ -190,7 +184,7 @@ def converter_3d(imagem_id):
         data = request.get_json()
         nome_objeto = data.get('nome_objeto')
         
-        # Remove a extensão .obj se o usuário incluiu
+        # remove a extensão .obj se o usuário incluiu
         if nome_objeto.lower().endswith('.obj'):
             nome_objeto = nome_objeto[:-4]
         
@@ -201,7 +195,6 @@ def converter_3d(imagem_id):
         
         tempo_inicio = time.time()
         
-        # Define os caminhos
         input_path = os.path.join(os.getcwd(), imagem.arquivo)
         output_dir = os.path.join(
             app.config['UPLOAD_FOLDER'], 
@@ -212,16 +205,14 @@ def converter_3d(imagem_id):
         print(f"Caminho da imagem: {input_path}")
         print(f"Diretório de saída: {output_dir}")
         
-        # Cria o diretório para objetos 3D se não existir
+        # cria o diretório para objetos 3D se não existir
         os.makedirs(output_dir, exist_ok=True)
         
         try:
-            # Importa e chama a função de conversão com o diretório de saída
             from imagem_objeto.img2obj import converter
             resultado = converter(input_path, nome_objeto, output_dir)
             print(f"Resultado da conversão: {resultado}")
             
-            # Caminho do objeto gerado (agora garantimos que só terá uma extensão .obj)
             output_path = os.path.join(output_dir, f"{nome_objeto}.obj")
             
             tempo_fim = time.time()
@@ -229,7 +220,7 @@ def converter_3d(imagem_id):
             
             # Atualiza o banco de dados
             imagem.objeto_3d = output_path
-            imagem.nome_objeto = nome_objeto  # Salvamos sem a extensão
+            imagem.nome_objeto = nome_objeto  # salvando sem a extensao !!!!
             imagem.tempo_conversao = tempo_total
             db.session.commit()
             
@@ -255,19 +246,19 @@ def deletar_imagem(imagem_id):
     try:
         imagem = Imagem.query.get_or_404(imagem_id)
         
-        # Verifica se a imagem pertence ao usuário
+        # verifica se a imagem pertence ao usuário
         if imagem.usuario_id != session['usuario_id']:
             return jsonify({'error': 'Acesso não autorizado'}), 403
         
-        # Remove o arquivo da imagem
+        # remove o arquivo da imagem
         if imagem.arquivo and os.path.exists(imagem.arquivo):
             os.remove(imagem.arquivo)
         
-        # Remove o arquivo do objeto 3D se existir
+        #remove o arquivo do objeto 3D se existir
         if imagem.objeto_3d and os.path.exists(imagem.objeto_3d):
             os.remove(imagem.objeto_3d)
         
-        # Remove o registro do banco de dados
+        #remove o registro do banco de dados
         db.session.delete(imagem)
         db.session.commit()
         

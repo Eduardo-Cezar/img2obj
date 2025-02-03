@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <p> Nome do Objeto: {{imagem.nome_objeto}}</p>
+    <p> Diretorio  do Objeto: {{imagem.objeto_3d}}</p>
+    <script>
+        // Obtenha a URL do objeto 3D diretamente do template
+        const objeto3DUrl = "../{{ imagem.objeto_3d }}"; // Use o filtro 'escapejs' para escapar caracteres especiais
+    
+        // Configuração da cena
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+    
+        // Adiciona luz
+        const light = new THREE.DirectionalLight(0xffffff, 1);
+        light.position.set(5, 5, 5).normalize();
+        scene.add(light);
+    
+        // Adiciona luz ambiente
+        const ambientLight = new THREE.AmbientLight(0x404040, 2); // Cor e intensidade da luz ambiente
+        scene.add(ambientLight);
+    
+        // Carregar o modelo .obj
+        const objLoader = new THREE.OBJLoader();
+        let model;
+    
+        // Use a URL do objeto 3D dinamicamente
+        fetch(objeto3DUrl)
+            .then(response => response.blob())
+            .then(blob => {
+                const reader = new FileReader();
+                reader.onload = function (event) {
+                    const objData = event.target.result;
+                    model = objLoader.parse(objData);
+                    scene.add(model);
+                    model.position.set(0, -1, 0);
+                };
+                reader.readAsText(blob);
+            })
+            .catch(error => console.error('Erro ao carregar o modelo:', error));
+    
+        // Posiciona a câmera
+        camera.position.set(0, 0, 5);
+    
+        // Cria os controles de órbita
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.25;
+        controls.screenSpacePanning = true;
+        controls.enableZoom = true; // Habilita zoom
+        controls.maxPolarAngle = Math.PI;
+        controls.enableRotate = true;
+    
+        const cameraSpeed = 0.1; // Velocidade do movimento da câmera
+    
+        // Função para capturar a movimentação das teclas do teclado
+        function onKeyDown(event) {
+            switch (event.key) {
+                case 'ArrowUp':
+                    model.rotation.x -= cameraSpeed;
+                    break;
+                case 'ArrowDown':
+                    model.rotation.x += cameraSpeed;
+                    break;
+                case 'ArrowLeft':
+                    model.rotation.z -= cameraSpeed;
+                    break;
+                case 'ArrowRight':
+                    model.rotation.z += cameraSpeed;
+                    break;
+                case 'i':
+                    model.rotation.y += cameraSpeed;
+                    break;
+                case 'k':
+                    model.rotation.y -= cameraSpeed;
+                    break;
+                case 'a':
+                    camera.position.y += cameraSpeed;
+                    break;
+                case 'd':
+                    camera.position.y -= cameraSpeed;
+                    break;
+                case 's':
+                    camera.position.x -= cameraSpeed;
+                    break;
+                case 'w':
+                    camera.position.x += cameraSpeed;
+                    break;
+                case 'j':
+                    camera.position.z += cameraSpeed;
+                    break;
+                case 'l':
+                    camera.position.z -= cameraSpeed;
+                    break;
+            }
+        }
+    
+        window.addEventListener('keydown', onKeyDown);
+    
+        // Função de animação
+        function animate() {
+            requestAnimationFrame(animate);
+    
+            // Animação do modelo: faz ele girar constantemente, para habilitar basta colocar uma rotação > que 0
+            if (model) {
+                model.rotation.x += 0.0;
+                model.rotation.y += 0.0;
+                model.rotation.z += 0.0;
+            }
+    
+            // Atualiza os controles para rotação e zoom
+            controls.update();
+    
+            // Renderiza a cena com a câmera
+            renderer.render(scene, camera);
+        }
+    
+        animate();
+    </script>
+    
+{% endblock %} 

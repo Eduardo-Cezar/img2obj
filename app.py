@@ -268,6 +268,22 @@ def deletar_imagem(imagem_id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+@app.route('/vizualizar-obj/<int:imagem_id>')
+def vizualizar_obj(imagem_id):
+    if 'usuario_id' not in session:
+        return jsonify({'error': 'Usuário não autenticado'}), 401
+    
+    imagem = Imagem.query.get_or_404(imagem_id)
+
+    if imagem.usuario_id != session['usuario_id']:
+        return jsonify({'error': 'Acesso não autorizado'}), 403
+
+    if not imagem.objeto_3d:
+        flash("Não existe")
+        return redirect(url_for('dashboard'))
+    
+    return render_template('vizualizar_obj.html', imagem=imagem)
+
 if __name__ == '__main__':
     print("Servidor Flask iniciando...")
     try:

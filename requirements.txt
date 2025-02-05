@@ -1,0 +1,12 @@
+flask
+flask-sqlalchemy
+psycopg2-binary
+werkzeug
+python-dotenv
+SQLAlchemy-Utils 
+vtk
+ailia
+opencv-python
+onnxruntime
+rembg
+trimesh
